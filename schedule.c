@@ -29,6 +29,7 @@ FORWARD _PROTOTYPE( int schedule_process, (struct schedproc * rmp)	);
 FORWARD _PROTOTYPE( void balance_queues, (struct timer *tp)		);
 
 #define DEFAULT_USER_TIME_SLICE 200
+#define DEFULAT_TICKETS 20
 
 /*===========================================================================*
  *				do_noquantum				                                 *
@@ -225,7 +226,7 @@ PRIVATE int schedule_process(struct schedproc * rmp)
     /* Start: eziegenb : April 24, 2014
      * Notes: Adds a default amount of tickets to starting process 
      */
-    rmp->ticket_num = (unsigned) 20;
+    rmp->ticket_num = (unsigned) DEFAULT_TICKETS;
 
 	return rv;
 }
