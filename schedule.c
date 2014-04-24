@@ -7,6 +7,12 @@
  *   do_nice		  Request to change the nice level on a proc
  *   init_scheduling      Called from main.c to set up/prepare scheduling
  */
+
+/* Team Purple: Modifications to schedule.c to implement a lottery scheduler
+ * Members: Erik Ziegenbalg,
+ * Date: April 24, 2014
+ */
+
 #include "sched.h"
 #include "schedproc.h"
 #include <assert.h>
@@ -25,7 +31,7 @@ FORWARD _PROTOTYPE( void balance_queues, (struct timer *tp)		);
 #define DEFAULT_USER_TIME_SLICE 200
 
 /*===========================================================================*
- *				do_noquantum				     *
+ *				do_noquantum				                                 *
  *===========================================================================*/
 
 PUBLIC int do_noquantum(message *m_ptr)
@@ -51,7 +57,7 @@ PUBLIC int do_noquantum(message *m_ptr)
 }
 
 /*===========================================================================*
- *				do_stop_scheduling			     *
+ *				do_stop_scheduling			                                 *
  *===========================================================================*/
 PUBLIC int do_stop_scheduling(message *m_ptr)
 {
@@ -75,7 +81,7 @@ PUBLIC int do_stop_scheduling(message *m_ptr)
 }
 
 /*===========================================================================*
- *				do_start_scheduling			     *
+ *				do_start_scheduling			                                 *
  *===========================================================================*/
 PUBLIC int do_start_scheduling(message *m_ptr)
 {
@@ -161,7 +167,7 @@ PUBLIC int do_start_scheduling(message *m_ptr)
 }
 
 /*===========================================================================*
- *				do_nice					     *
+ *				do_nice					                                     *
  *===========================================================================*/
 PUBLIC int do_nice(message *m_ptr)
 {
@@ -204,7 +210,7 @@ PUBLIC int do_nice(message *m_ptr)
 }
 
 /*===========================================================================*
- *				schedule_process			     *
+ *				schedule_process			                                 *
  *===========================================================================*/
 PRIVATE int schedule_process(struct schedproc * rmp)
 {
@@ -216,12 +222,17 @@ PRIVATE int schedule_process(struct schedproc * rmp)
 		rmp->endpoint, rv);
 	}
 
+    /* Start: eziegenb : April 24, 2014
+     * Notes: Adds a default amount of tickets to starting process 
+     */
+    rmp->ticket_num = 20;
+
 	return rv;
 }
 
 
 /*===========================================================================*
- *				start_scheduling			     *
+ *				start_scheduling			                                 *
  *===========================================================================*/
 
 PUBLIC void init_scheduling(void)
@@ -232,7 +243,7 @@ PUBLIC void init_scheduling(void)
 }
 
 /*===========================================================================*
- *				balance_queues				     *
+ *				balance_queues				                                 *
  *===========================================================================*/
 
 /* This function in called every 100 ticks to rebalance the queues. The current
