@@ -225,7 +225,7 @@ PRIVATE int schedule_process(struct schedproc * rmp)
     /* Start: eziegenb : April 24, 2014
      * Notes: Adds a default amount of tickets to starting process 
      */
-    rmp->ticket_num = 20;
+    rmp->ticket_num = (unsigned) 20;
 
 	return rv;
 }
