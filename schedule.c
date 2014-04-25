@@ -217,17 +217,26 @@ PRIVATE int schedule_process(struct schedproc * rmp)
 {
 	int rv;
 
+    /* Start: eziegenb : April 24, 2014
+     * Notes: Adds a default amount of tickets to starting process 
+     */
+    rmp->ticket_num = (unsigned) DEFAULT_TICKETS;
+
+    /* do lottery function should go here depending on who wins we set the 
+     * appropriate rmp structure which gets executed by the sys_schedule
+     * statement. The line above only assigns a ticket to the current rmp 
+     * process, thus we need to traverse the whole rmp linked list to do the
+     * lottery?
+     */
+
+
 	if ((rv = sys_schedule(rmp->endpoint, rmp->priority,
 			rmp->time_slice)) != OK) {
 		printf("SCHED: An error occurred when trying to schedule %d: %d\n",
 		rmp->endpoint, rv);
 	}
 
-    /* Start: eziegenb : April 24, 2014
-     * Notes: Adds a default amount of tickets to starting process 
-     */
-    rmp->ticket_num = (unsigned) DEFAULT_TICKETS;
-
+    
 	return rv;
 }
 
