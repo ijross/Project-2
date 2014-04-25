@@ -20,6 +20,11 @@
 #include <machine/archtypes.h>
 #include "kernel/proc.h" /* for queue constants */
 
+/* Our dependencies */
+#include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 PRIVATE timer_t sched_timer;
 PRIVATE unsigned balance_timeout;
 
@@ -30,6 +35,18 @@ FORWARD _PROTOTYPE( void balance_queues, (struct timer *tp)		);
 
 #define DEFAULT_USER_TIME_SLICE 200
 #define DEFULAT_TICKETS 20
+
+/*===========================================================================*
+ *				randTick     				                                 *
+ *===========================================================================*/
+int randTick(int totalTicks){
+        time_t t;
+        int ticket = 0;
+        srand((unsigned) time(&t));
+        ticket = rand() % (totalTicks) +1;
+        return ticket;
+}
+
 
 /*===========================================================================*
  *				do_noquantum				                                 *
@@ -278,3 +295,5 @@ PRIVATE void balance_queues(struct timer *tp)
 
 	set_timer(&sched_timer, balance_timeout, balance_queues, 0);
 }
+
+
