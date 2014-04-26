@@ -270,6 +270,23 @@ PUBLIC void init_scheduling(void)
 }
 
 /*===========================================================================*
+ *				count_tickets			     *
+ *===========================================================================*/
+PUBLIC int count_tickets(void)
+{
+   struct schedproc *rmp;
+   int proc_nr;
+   int tickets = 0;
+   for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
+      /* if process is in the last queue */
+      if(rmp->flags & IN_USE && rmp->priority == MIN_USER_Q) {
+         tickets += rmp->ticket_num;
+      }
+   }
+   return tickets;
+}
+
+/*===========================================================================*
  *				balance_queues				                                 *
  *===========================================================================*/
 
