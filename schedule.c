@@ -34,7 +34,7 @@ FORWARD _PROTOTYPE( int schedule_process, (struct schedproc * rmp)	);
 FORWARD _PROTOTYPE( void balance_queues, (struct timer *tp)		);
 
 #define DEFAULT_USER_TIME_SLICE 200
-#define DEFULAT_TICKETS 20
+#define DEFAULT_TICKETS 20
 
 /*===========================================================================*
  *				randTick     				                                 *
