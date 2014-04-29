@@ -243,7 +243,7 @@ PUBLIC int do_lottery(void)
 			if (rmp->priority == WINNER_QUEUE) {
 				printf("Push to Block queue\n");				
 				rmp->priority = BLOCK_QUEUE;
-                rmp->ticket_numer *= 2;
+                rmp->ticket_number *= 2;
 				rv = schedule_process(rmp);
 			}
 		}
