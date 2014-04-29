@@ -51,6 +51,7 @@ PUBLIC int do_noquantum(message *m_ptr)
 	
 	if (rmp->priority == WINNER_QUEUE || rmp->priority == BLOCK_QUEUE) {
 		printf("Done\n");
+        rmp->ticket_number /= 2;
 		rmp->priority = LOSER_QUEUE; 
 	} 
 	
@@ -242,6 +243,7 @@ PUBLIC int do_lottery(void)
 			if (rmp->priority == WINNER_QUEUE) {
 				printf("Push to Block queue\n");				
 				rmp->priority = BLOCK_QUEUE;
+                rmp->ticket_numer *= 2;
 				rv = schedule_process(rmp);
 			}
 		}
