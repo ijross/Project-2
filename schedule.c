@@ -312,7 +312,7 @@ PUBLIC int randTick(int totalTicks){
 	int ticket = 0;
 	if (totalTicks == 0) {
 		return 0;
-   }
+   	}
 	srand((unsigned) time(0));
 	ticket = rand() % (totalTicks) +1;
 	return ticket;
@@ -363,9 +363,9 @@ PRIVATE void balance_queues(struct timer *tp)
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 		if (rmp->flags & IN_USE) {
 			if ((rmp->priority > rmp->max_priority) &&
-				 (rmp->priority != BLOCK_QUEUE) &&  
-				 (rmp->priority != LOSER_QUEUE) && 
-             (rmp->priority != WINNER_QUEUE)) {		
+			    (rmp->priority != BLOCK_QUEUE) &&  
+		            (rmp->priority != LOSER_QUEUE) && 
+             		    (rmp->priority != WINNER_QUEUE)) {		
 				
 				printf("BP: %d %d \n",rmp->priority, rmp->max_priority);				
 				rmp->priority -= 1; /* increase priority */
