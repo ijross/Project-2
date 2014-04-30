@@ -20,6 +20,7 @@
 #include <stdio.h>
 PRIVATE timer_t sched_timer;
 PRIVATE unsigned balance_timeout;
+PRIVATE int totalLot;
 
 #define BALANCE_TIMEOUT	5 /* how often to balance queues in seconds */
 
@@ -119,6 +120,7 @@ PUBLIC int do_start_scheduling(message *m_ptr)
 	rmp->parent        = m_ptr->SCHEDULING_PARENT;
 	rmp->max_priority  = (unsigned) m_ptr->SCHEDULING_MAXPRIO;
 	rmp->ticket_number = DEFAULT_TICKET_NUMBER;
+	rmp->win_amount    = 0;
 
 	if (rmp->max_priority >= NR_SCHED_QUEUES) {
 		return EINVAL;
@@ -133,6 +135,7 @@ PUBLIC int do_start_scheduling(message *m_ptr)
 		/*rmp->priority   = rmp->max_priority;*/
 		rmp->priority   = LOSER_QUEUE;
 		rmp->time_slice = (unsigned) m_ptr->SCHEDULING_QUANTUM;
+		totalLot = 0;
 		break;
 		
 	case SCHEDULING_INHERIT:
@@ -235,13 +238,14 @@ PUBLIC int do_lottery(void)
 	int ticket_number = 0;
 	int lottery_num;
 
+	totalLot += 1;
+
 	lottery_num = randTick(ticket_count());
 	queue_count();
 
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 		if (rmp->flags & IN_USE) {
 			if (rmp->priority == WINNER_QUEUE) {
-				printf("Push to Block queue\n");				
 				rmp->priority = BLOCK_QUEUE;
                 rmp->ticket_number *= 2;
 				rv = schedule_process(rmp);
@@ -254,9 +258,8 @@ PUBLIC int do_lottery(void)
 			if (rmp->priority == LOSER_QUEUE) {	
 				 ticket_number += rmp->ticket_number;
 				if(lottery_num <= ticket_number) {
-					printf("Winner: %d %d ", lottery_num, ticket_number);
-					printf("Before: %d \n", rmp->priority);
 					rmp->priority = WINNER_QUEUE;
+					rmp->win_amount += 1;
 					rv = schedule_process(rmp);
 					break;
 				}
@@ -266,6 +269,28 @@ PUBLIC int do_lottery(void)
 	
 	return rv;
 }
+
+/*===========================================================================*
+ *				do_printWinner					     *
+ *===========================================================================*/
+
+PUBLIC void do_printWinner(void) {
+	struct schedproc *rmp;
+	int proc_nr;
+	
+
+	printf("Lottery info: \n");
+		for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
+			if (rmp->flags & IN_USE && rmp->win_amount > 0) {
+				printf("pid: %d, win_amount: %d/%d = %d | rmp->ticket_number: %d\n", 
+										rmp->endpoint, rmp->win_amount,
+											totalLot, (rmp->win_amount/totalLot),
+												rmp->ticket_number);
+			}
+		}
+	printf("Lottery info end\n");
+}
+
 
 /*===========================================================================*
  *				queue_count					     *
@@ -283,7 +308,6 @@ PUBLIC int queue_count(void)
 			}
 		}
 	}
-	printf("Queue Winner: %u\t\n", queue_count);
 	return queue_count;
 }
 
@@ -303,7 +327,6 @@ PUBLIC int ticket_count(void)
 			}
 		}
 	}
-	printf("Current Ticket: %u\t", ticket_count);
 	return ticket_count;
 }
 
@@ -379,5 +402,8 @@ PRIVATE void balance_queues(struct timer *tp)
 	if(queue_count() == 0) {
 		do_lottery();
 	}
+	
+	do_printWinner();
+
 	set_timer(&sched_timer, balance_timeout, balance_queues, 0);
 }
