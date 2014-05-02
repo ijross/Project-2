@@ -34,6 +34,7 @@ FORWARD _PROTOTYPE( void balance_queues, (struct timer *tp)		);
 #define WINNER_QUEUE 14
 #define BLOCK_QUEUE  13
 #define MAX_TICKETS 100
+#define MIN_TICKETS 0
 /*===========================================================================*
  *				do_noquantum				     *
  *===========================================================================*/
@@ -42,8 +43,8 @@ PUBLIC int do_noquantum(message *m_ptr)
 {
 	register struct schedproc *rmp;
 	int rv, proc_nr_n;
-	printf("do_noquantum\n");
-	if (sched_isokendpt(m_ptr->m_source, &proc_nr_n) != OK) {
+	
+        if (sched_isokendpt(m_ptr->m_source, &proc_nr_n) != OK) {
 		printf("SCHED: WARNING: got an invalid endpoint in OOQ msg %u.\n",
 		m_ptr->m_source);
 		return EBADEPT;
@@ -52,7 +53,6 @@ PUBLIC int do_noquantum(message *m_ptr)
 	rmp = &schedproc[proc_nr_n];
 	
 	if (rmp->priority == WINNER_QUEUE || rmp->priority == BLOCK_QUEUE) {
-		printf("Done\n");
         rmp->ticket_number /= 2;
 		rmp->priority = LOSER_QUEUE; 
 	} 
@@ -192,10 +192,10 @@ PUBLIC int do_nice(message *m_ptr)
 {
 	struct schedproc *rmp;
 	int rv;
+        int ticket_num = m_ptr->SCHEDULING_MAXPRIO;
 	int proc_nr_n;
 	unsigned new_q, old_q, old_max_q;
         unsigned new_ticket_num, old_num;
-	printf("do_nice\n");
 	/* check who can send you requests */
 	if (!accept_message(m_ptr))
 		return EPERM;
@@ -207,19 +207,24 @@ PUBLIC int do_nice(message *m_ptr)
 	}
         /******SCHEDULING_MAXPRIO is the number passed by nice() *****/
 	rmp = &schedproc[proc_nr_n];
-	new_q = (unsigned) m_ptr->SCHEDULING_MAXPRIO;
+      /*	new_q = (unsigned) m_ptr->SCHEDULING_MAXPRIO;
 	if (new_q >= NR_SCHED_QUEUES) {
 		return EINVAL;
-	}
+	}*/
+
+
+        /*****Convert nice number of ticket number**** */
+        ticket_num += 20;
         
-        new_ticket_num = (unsigned) m_ptr->SCHEDULING_MAXPRIO;
+        printf("IN nice newtickets = %d\n", ticket_num); 
+        new_ticket_num = (unsigned)(ticket_num);
         if(new_ticket_num >= MAX_TICKETS){
            return EINVAL;
         }
 
-	/* Store old values, in case we need to roll back the changes */
+	/* Store old values, in case we need to roll back the changes 
 	old_q     = rmp->priority;
-	old_max_q = rmp->max_priority;
+	old_max_q = rmp->max_priority;*/
         old_num = rmp->ticket_number;
 
 	/* Update the proc entry and reschedule the process */
@@ -291,7 +296,7 @@ PUBLIC void do_printWinner(void) {
 	int proc_nr;
 	
 
-	printf("Lottery info: \n");
+/*	printf("Lottery info: \n");
 		for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 			if (rmp->flags & IN_USE && rmp->win_amount > 0) {
 				printf("pid: %d, win_amount: %d/%d = %d | rmp->ticket_number: %d, queue: %d\n", 
@@ -300,7 +305,7 @@ PUBLIC void do_printWinner(void) {
 												rmp->ticket_number,rmp->priority);
 			}
 		}
-	printf("Lottery info end\n");
+	printf("Lottery info end\n");*/
 }
 
 
@@ -361,7 +366,7 @@ PUBLIC int randTick(int totalTicks){
 PRIVATE int schedule_process(struct schedproc * rmp)
 {
 	int rv;
-
+        printf("Winner has %d tickets\n", rmp->ticket_number);
 	if ((rv = sys_schedule(rmp->endpoint, rmp->priority,
 			rmp->time_slice)) != OK) {
 		printf("SCHED: An error occurred when trying to schedule %d: %d\n",
