@@ -55,12 +55,12 @@ PUBLIC int do_noquantum(message *m_ptr)
     /* if process was in BLOCK_QUEUE give it more tickets
      * if it was in WINNER_QUEUE take away tickets. */
     if(rmp->priority == BLOCK_QUEUE) {
-        rmp->ticket_number += DEFAULT_TICKET_NUMBER;
+        rmp->ticket_number *= 2;
         if(rmp->ticket_number > MAX_TICKETS)
             rmp->ticket_number = MAX_TICKETS;
         flag = 1;
     } else if (rmp->priority == WINNER_QUEUE) {
-        rmp->ticket_number -= DEFAULT_TICKET_NUMBER;
+        rmp->ticket_number /= 2;
         if(rmp->ticket_number < MIN_TICKETS) 
             rmp->ticket_number = MIN_TICKETS;
     }
