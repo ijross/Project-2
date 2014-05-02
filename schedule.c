@@ -29,12 +29,12 @@ FORWARD _PROTOTYPE( void balance_queues, (struct timer *tp)		);
 
 
 #define DEFAULT_USER_TIME_SLICE 200
-#define DEFAULT_TICKET_NUMBER 20
+#define DEFAULT_TICKET_NUMBER   20
 #define LOSER_QUEUE  15
 #define WINNER_QUEUE 14
 #define BLOCK_QUEUE  13
-#define MAX_TICKETS 100
-#define MIN_TICKETS 0
+#define MAX_TICKETS  100
+#define MIN_TICKETS  1
 /*===========================================================================*
  *				do_noquantum				     *
  *===========================================================================*/
@@ -46,27 +46,44 @@ PUBLIC int do_noquantum(message *m_ptr)
 	
         if (sched_isokendpt(m_ptr->m_source, &proc_nr_n) != OK) {
 		printf("SCHED: WARNING: got an invalid endpoint in OOQ msg %u.\n",
-		m_ptr->m_source);
+        m_ptr->m_source);
 		return EBADEPT;
 	}
 
 	rmp = &schedproc[proc_nr_n];
 	
-	if (rmp->priority == WINNER_QUEUE || rmp->priority == BLOCK_QUEUE) {
-        rmp->ticket_number /= 2;
-		rmp->priority = LOSER_QUEUE; 
-	} 
-	
+    /* if process was in BLOCK_QUEUE give it more tickets
+     * if it was in WINNER_QUEUE take away tickets. */
+    if(rmp->priority == BLOCK_QUEUE) {
+        rmp->ticket_number += DEFAULT_TICKET_NUMBER;
+        if(rmp->ticket_number > MAX_TICKETS)
+            rmp->ticket_number = MAX_TICKETS;
+        flag = 1;
+    } else if (rmp->priority == WINNER_QUEUE) {
+        rmp->ticket_number -= DEFAULT_TICKET_NUMBER;
+        if(rmp->ticket_number < MIN_TICKETS) 
+            rmp->ticket_number = MIN_TICKETS;
+    }
+
+    /* Set process from WINNER and BLOCK queue back to LOSSER_QUEUE */
+    if (rmp->priority == WINNER_QUEUE || rmp->priority == BLOCK_QUEUE) {
+    	rmp->priority = LOSER_QUEUE; 
+    } 
+
+    /* Other priority not in the lottery queue get priority lowered by 1 */
 	if (rmp->priority < 12) {
-                
 		rmp->priority += 1; /* lower priority */
 	}
 		
+	/* Rescheduling and Restoring Quantam to process */	
 	if ((rv = schedule_process(rmp)) != OK) {
 		return rv;
 	}
-
-	do_lottery();
+	
+    /* Call lottery if process was from WINNER_QUEUE*/
+    if(!flag && rmp->priority == LOSER_QUEUE) {
+       do_lottery();
+    }
 
 	return OK;
 }
@@ -91,6 +108,11 @@ PUBLIC int do_stop_scheduling(message *m_ptr)
 	rmp = &schedproc[proc_nr_n];
 	rmp->flags = 0; /*&= ~IN_USE;*/
 
+    /* Call lottery if process from WINNER_QUEUE finish*/
+    if(rmp->priority == WINNER_QUEUE) {
+      printf("Winner Exit\n");
+      do_lottery();  
+    }
 
 	return OK;
 }
@@ -252,30 +274,35 @@ PUBLIC int do_lottery(void)
 	struct schedproc *rmp;
 	int rv;
 	int proc_nr;
+	int tickets = ticket_count();
 	int ticket_number = 0;
 	int lottery_num;
 
+	/* make sure there are ticket to draw from*/
+    if(tickets == 0) return 0;
+	lottery_num = randTick(tickets);
 	totalLot += 1;
+	
 
-	lottery_num = randTick(ticket_count());
-	queue_count();
-
+    /* Check for any block process in WINNER_QUEUE 
+     * and move it to the BLOCK_QUEUE */
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 		if (rmp->flags & IN_USE) {
 			if (rmp->priority == WINNER_QUEUE) {
 				rmp->priority = BLOCK_QUEUE;
-                rmp->ticket_number *= 2;
+                /* rmp->ticket_number *= 2; */
 				rv = schedule_process(rmp);
 			}
 		}
 	}
 
+    /* Search for process with wining ticket */
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 		if (rmp->flags & IN_USE) {
 			if (rmp->priority == LOSER_QUEUE) {	
-				 ticket_number += rmp->ticket_number;
+			    ticket_number += rmp->ticket_number;
 				if(lottery_num <= ticket_number) {
-					rmp->priority = WINNER_QUEUE;
+				    rmp->priority = WINNER_QUEUE;
 					rmp->win_amount += 1;
 					rv = schedule_process(rmp);
 					break;
@@ -318,6 +345,7 @@ PUBLIC int queue_count(void)
 	int proc_nr;
 	unsigned queue_count = 0;
 
+    /* Count the number of process in the WINNER_QUEUE*/
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 		if (rmp->flags & IN_USE) {
 			if (rmp->priority == WINNER_QUEUE) {		
@@ -336,7 +364,8 @@ PUBLIC int ticket_count(void)
 	struct schedproc *rmp;
 	int proc_nr;
 	int ticket_count = 0;
-
+    
+    /* Count the number of ticket in the Lottery queue */
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 		if (rmp->flags & IN_USE) {
 			if (rmp->priority == LOSER_QUEUE) {		
@@ -366,7 +395,7 @@ PUBLIC int randTick(int totalTicks){
 PRIVATE int schedule_process(struct schedproc * rmp)
 {
 	int rv;
-        printf("Winner has %d tickets\n", rmp->ticket_number);
+    printf("Winner has %d tickets\n", rmp->ticket_number);
 	if ((rv = sys_schedule(rmp->endpoint, rmp->priority,
 			rmp->time_slice)) != OK) {
 		printf("SCHED: An error occurred when trying to schedule %d: %d\n",
@@ -404,10 +433,10 @@ PRIVATE void balance_queues(struct timer *tp)
 	int rv;
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 		if (rmp->flags & IN_USE) {
-			if ((rmp->priority > rmp->max_priority) &&
+		    if ((rmp->priority > rmp->max_priority) &&
 			    (rmp->priority != BLOCK_QUEUE) &&  
-		            (rmp->priority != LOSER_QUEUE) && 
-             		    (rmp->priority != WINNER_QUEUE)) {		
+		        (rmp->priority != LOSER_QUEUE) && 
+             	(rmp->priority != WINNER_QUEUE)) {		
 				
 				printf("BP: %d %d \n",rmp->priority, rmp->max_priority);				
 				rmp->priority -= 1; /* increase priority */
@@ -416,6 +445,7 @@ PRIVATE void balance_queues(struct timer *tp)
 		}
 	}
 
+    /* Check if WINNER_QUEUE is empty*/
 	if(queue_count() == 0) {
 		do_lottery();
 	}
