@@ -52,7 +52,7 @@ PUBLIC int do_noquantum(message *m_ptr)
 
     	rmp = &schedproc[proc_nr_n];
     
-    
+    	
     	if (rmp->priority == WINNER_QUEUE || rmp->priority == BLOCK_QUEUE) {
         	rmp->ticket_number /= 2;
         	rmp->priority = LOSER_QUEUE; 
@@ -62,11 +62,13 @@ PUBLIC int do_noquantum(message *m_ptr)
 	if (rmp->priority < 12) {
 		rmp->priority += 1; /* lower priority */
 	}
-		
+	
+	/* Rescheduling and Restoring Quantam to process */
 	if ((rv = schedule_process(rmp)) != OK) {
 		return rv;
 	}
 
+	/* Call lottery to pick a new winner*/
 	do_lottery();
 
 	return OK;
