@@ -55,6 +55,7 @@ PUBLIC int do_noquantum(message *m_ptr)
     	
     	if (rmp->priority == WINNER_QUEUE || rmp->priority == BLOCK_QUEUE) {
         	rmp->ticket_number /= 2;
+        	if(rmp->ticket_number == 0) rmp->ticket_number = 1;
         	rmp->priority = LOSER_QUEUE; 
     	} 
 	
