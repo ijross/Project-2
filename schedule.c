@@ -27,7 +27,7 @@ PRIVATE int totalLot;
 FORWARD _PROTOTYPE( int schedule_process, (struct schedproc * rmp)	);
 FORWARD _PROTOTYPE( void balance_queues, (struct timer *tp)		);
 
-
+/* #define PRINT_STATS */
 #define DEFAULT_USER_TIME_SLICE 200
 #define DEFAULT_TICKET_NUMBER 20
 #define LOSER_QUEUE  15
@@ -305,7 +305,7 @@ PUBLIC void do_printWinner(void) {
 	int proc_nr;
 	
 
-/*	printf("Lottery info: \n");
+	printf("Lottery info: \n");
 		for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 			if (rmp->flags & IN_USE && rmp->win_amount > 0) {
 				printf("pid: %d, win_amount: %d/%d = %d | rmp->ticket_number: %d, queue: %d\n", 
@@ -314,7 +314,7 @@ PUBLIC void do_printWinner(void) {
 										rmp->ticket_number,rmp->priority);
 			}
 		}
-	printf("Lottery info end\n");*/
+	printf("Lottery info end\n");
 }
 
 
@@ -433,8 +433,8 @@ PRIVATE void balance_queues(struct timer *tp)
 		do_lottery();
 	}
 	
-
+#ifdef PRINT_STATS
 	do_printWinner();
-
+ #endif
 	set_timer(&sched_timer, balance_timeout, balance_queues, 0);
 }
